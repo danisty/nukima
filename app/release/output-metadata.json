@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "com.dyna.nukima",
+  "variantName": "release",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "properties": [],
+      "versionCode": 21,
+      "versionName": "2.5.9",
+      "enabled": true,
+      "outputFile": "app-release.apk"
+    }
+  ]
+}
