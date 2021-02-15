@@ -1,47 +1,68 @@
 package com.dyna.nukima;
 
-import com.squareup.okhttp.FormEncodingBuilder;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import android.content.Context;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.franmontiel.persistentcookiejar.ClearableCookieJar;
+import com.franmontiel.persistentcookiejar.PersistentCookieJar;
+import com.franmontiel.persistentcookiejar.cache.CookieCache;
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+
+import okhttp3.Cookie;
+import okhttp3.FormBody;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 class HttpService {
-	private static String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 OPR/68.0.3618.197";
+	private final static String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 OPR/68.0.3618.197";
+	private static final OkHttpClient client = new OkHttpClient();
 
 	static Response HttpGet(String url) throws IOException {
-		Request request = new Request.Builder() .url(url) .header("user-agent", userAgent).build();
-		return new OkHttpClient().newCall(request).execute();
+		Request.Builder request = new Request.Builder() .url(url) .addHeader("user-agent", userAgent);
+		for (String cookie : MainActivity.cookiesRaw.split(";")) {
+			request.addHeader("Cookie", cookie.trim());
+		}
+		return client.newCall(request.build()).execute();
 	}
 
 	static Response HttpGet(String url, HashMap<String, String> headers) throws IOException {
-		Request.Builder request = new Request.Builder() .url(url) .header("user-agent", userAgent);
+		Request.Builder request = new Request.Builder() .url(url) .addHeader("user-agent", userAgent);
 		for (String key : headers.keySet()) {
-			request.header(key, headers.get(key));
+			request.addHeader(key, headers.get(key));
 		}
-		return new OkHttpClient().newCall(request.build()).execute();
+		return client.newCall(request.build()).execute();
 	}
 
 	static Response HttpPost(String url, HashMap<String, String> data, HashMap<String, String> headers) throws IOException {
-		Request.Builder request = new Request.Builder() .url(url) .header("user-agent", userAgent);
+		Request.Builder request = new Request.Builder() .url(url) .addHeader("user-agent", userAgent);
 		for (String key : headers.keySet()) {
-			request.header(key, headers.get(key));
+			request.addHeader(key, headers.get(key));
 		}
-		FormEncodingBuilder formBody = new FormEncodingBuilder();
+		FormBody.Builder formBody = new FormBody.Builder();
 		for (String key : data.keySet()) {
 			formBody.add(key, data.get(key));
 		}
-		return new OkHttpClient().newCall(request.post(formBody.build()).build()).execute();
+		return client.newCall(request.post(formBody.build()).build()).execute();
 	}
 
 	static Response HttpPost(String url, HashMap<String, String> data) throws IOException {
-		FormEncodingBuilder formBody = new FormEncodingBuilder();
+		FormBody.Builder formBody = new FormBody.Builder();
 		for (String key : data.keySet()) {
 			formBody.add(key, data.get(key));
 		}
-		Request request = new Request.Builder() .url(url) .post(formBody.build()) .header("user-agent", userAgent) .build();
-		return new OkHttpClient().newCall(request).execute();
+		Request request = new Request.Builder() .url(url) .post(formBody.build()) .addHeader("user-agent", userAgent) .build();
+		return client.newCall(request).execute();
 	}
 }

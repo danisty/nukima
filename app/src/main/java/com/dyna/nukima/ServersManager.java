@@ -3,8 +3,6 @@ package com.dyna.nukima;
 import android.content.Context;
 import android.widget.Toast;
 
-import com.squareup.okhttp.Response;
-
 import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,6 +13,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import okhttp3.Response;
 
 class ServersManager {
 	public String server;

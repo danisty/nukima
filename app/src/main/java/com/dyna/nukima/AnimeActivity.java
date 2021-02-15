@@ -8,8 +8,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.webkit.WebView;
 
-import com.squareup.okhttp.Response;
-
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -25,6 +23,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import okhttp3.Response;
 
 public class AnimeActivity extends AppCompatActivity {
 	private String animeName;

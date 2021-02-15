@@ -4,20 +4,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,18 +22,22 @@ import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnSuccessListener;
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.gms.tasks.Task;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
-import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.squareup.okhttp.Response;
 
-import org.apache.commons.text.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,30 +54,25 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.nio.channels.FileChannel;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.stream.Collectors;
+import java.util.Map;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 	private UpdateDownloader updateDownloader;
-	private RecyclerView animeSearch;
+	public RecyclerView animeSearch;
 	private SearchView searchView;
 	public static JSONObject userData;
 	public static boolean ignoreNews = false;
 	public static WeakReference<WebView> mainWebView;
-	public static String cookies;
+	public static Map<String, String> cookies;
+	public static String cookiesRaw;
+	public static String urlSecret;
 
 	public static class CustomArrayList<E> extends ArrayList<E> {
 
@@ -167,6 +161,15 @@ public class MainActivity extends AppCompatActivity {
 		jobScheduler.schedule(info);
 	}
 
+	public Map<String, String> map(String cookies) {
+		Map<String, String> cookiesList = new HashMap<>();
+		for (String cookie : cookies.split(";")) {
+			String[] cookieData = cookie.trim().split("=");
+			cookiesList.put(cookieData[0], cookieData[1]);
+		}
+		return cookiesList;
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -187,18 +190,22 @@ public class MainActivity extends AppCompatActivity {
 		showMainPage();
 		scheduleJob();
 
-		// -- Temporary Captcha Bypass which was removed -- //
-
+		// -- Cloudflare Bypass -- //
 		/*mainWebView = new WeakReference<>(findViewById(R.id.mainWebView));
 		mainWebView.get().getSettings().setJavaScriptEnabled(true);
 		mainWebView.get().setWebViewClient(new WebViewClient(){
 			@Override
 			public void onPageFinished(WebView view, String url) {
 				super.onPageFinished(view, url);
-				if (!url.equals("https://www.animefenix.com"))
+				if (url.startsWith("https://www.animefenix.com")) {
+					urlSecret = url;
+					cookiesRaw = CookieManager.getInstance().getCookie(url);
+					cookies = map(cookiesRaw);
+					System.out.println(cookiesRaw);
+
+					mainWebView.get().setVisibility(View.GONE);
 					showMainPage();
-				cookies = CookieManager.getInstance().getCookie(url);
-				System.out.println(cookies);
+				}
 			}
 		});
 		mainWebView.get().setWebChromeClient(new WebChromeClient());
@@ -377,7 +384,7 @@ public class MainActivity extends AppCompatActivity {
 				data.add(new Tuple<>(version, logs));
 			}
 
-			runOnUiThread(()-> {
+			runOnUiThread(() -> {
 				View layout = LayoutInflater.from(this).inflate(R.layout.recycler_view, null);
 				new AlertDialog.Builder(this)
 					.setPositiveButton("Close", null) .setView(layout)
@@ -417,7 +424,7 @@ public class MainActivity extends AppCompatActivity {
 			if (userData != null) return;
 			File userDataFile = new File(context.getFilesDir().getAbsolutePath() + "/userdata.json");
 			String userDataString;
-			if (userDataFile.exists() && !readFile(userDataFile).isEmpty()) {
+			if (userDataFile.exists() && readFile(userDataFile).length() > 118) { // 118 -> default userdata size
 				userDataString = readFile(userDataFile);
 				exportFile(userDataFile, context.getExternalFilesDir("backups"), "userdataBackup");
 			} else {
@@ -495,14 +502,13 @@ public class MainActivity extends AppCompatActivity {
 		return data.toString();
 	}
 
-	private static File exportFile(File src, File dst, String fileName) throws IOException {
+	private static void exportFile(File src, File dst, String fileName) throws IOException {
 		if (!dst.exists()) {
-			if (!dst.mkdir()) {
-				return null;
-			}
+			dst.mkdir();
 		}
 
-		File expFile = new File(dst.getPath() + File.separator + fileName + dst.listFiles().length + ".txt");
+		File expFile = new File(dst.getPath() + File.separator + fileName + ".txt");
+		if (expFile.exists()) { expFile.delete(); }
 		FileChannel inChannel = null;
 		FileChannel outChannel = null;
 
@@ -521,8 +527,6 @@ public class MainActivity extends AppCompatActivity {
 			if (outChannel != null)
 				outChannel.close();
 		}
-
-		return expFile;
 	}
 
 	private void setItemsVisibility(Menu menu, MenuItem exception, boolean visible) {
@@ -564,7 +568,9 @@ public class MainActivity extends AppCompatActivity {
 
 		new Thread(()->{
 			try {
-				Document doc = Jsoup.connect("https://www.animefenix.com").get();
+				Response mainPage = HttpService.HttpGet(urlSecret);
+				Document doc = Jsoup.parse(mainPage.body().string());
+				System.out.println(doc);
 				addAnimes("capitulos-grid", "overarchingdiv", newCategory, doc);
 				addAnimes("list-series", "image", recentCategory, doc);
 				addAnimes("home-slider", "image", popularCategory, doc);

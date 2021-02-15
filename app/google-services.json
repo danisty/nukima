@@ -15,6 +15,43 @@
       },
       "oauth_client": [
         {
+          "client_id": "2756211621-nq7043n7el8rsb0a6ic699t24k4f9fr2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dyna.nukima",
+            "certificate_hash": "72c58979b27ddf225b2a8d9aa27c73cedd8a2020"
+          }
+        },
+        {
+          "client_id": "2756211621-d07lk0hfee9hn6m44et259amp77kiif9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKq2LO3gY1rv7-tlKyJEIfMpBe3yeW1DE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "2756211621-d07lk0hfee9hn6m44et259amp77kiif9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2756211621:android:89c35c995377721d042e4c",
+        "android_client_info": {
+          "package_name": "com.dyna.nukima.debug"
+        }
+      },
+      "oauth_client": [
+        {
           "client_id": "2756211621-d07lk0hfee9hn6m44et259amp77kiif9.apps.googleusercontent.com",
           "client_type": 3
         }

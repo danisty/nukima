@@ -17,7 +17,7 @@ class CookieImageDownloader extends UrlConnectionDownloader {
 	@Override
 	protected HttpURLConnection openConnection(Uri path) throws IOException {
 		HttpURLConnection conn = super.openConnection(path);
-		conn.setRequestProperty("Cookie", MainActivity.cookies);
+		conn.setRequestProperty("Cookie", MainActivity.cookiesRaw);
 		return conn;
 	}
 }
