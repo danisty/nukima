@@ -49,11 +49,12 @@ class Episode {
 		this.category = category;
 	}
 
-	public String[] filterServers(String[] availableServers, HashMap<String, String> servers) {
+	public String[] filterServers(String[] availableServers, HashMap<String, String> servers, boolean og) {
 		ArrayList<String> results = new ArrayList<>();
 		for (String s : availableServers) {
-			if (servers.get(s) != null) {
-				results.add(s);
+			String[] n = s.split(":");
+			if (servers.get(n[0]) != null) {
+				results.add((n.length > 1 && !og) ? n[1] : n[0]);
 			}
 		}
 		return results.toArray(new String[]{});
@@ -62,13 +63,14 @@ class Episode {
 	public void watch() {
 		final Episode self = this;
 		final HashMap<String, String> servers = ServersManager.getServers(self.url);
-		final String[] availableServers = filterServers(ServersManager.availableServers, servers);
+		final String[] availableServers = filterServers(ServersManager.availableServers, servers, false);
+		final String[] ogAvailableServers = filterServers(ServersManager.availableServers, servers, true);
 		final AlertDialog.Builder mBuilder = new AlertDialog.Builder(self.category.context);
 
 		self.category.context.runOnUiThread(() -> {
 			mBuilder.setTitle("Choose a server");
 			mBuilder.setSingleChoiceItems(availableServers, -1, (dialogInterface, i) -> {
-				ServersManager serverManager = new ServersManager(availableServers[i], servers.get(availableServers[i]), self.url, this.category.context);
+				ServersManager serverManager = new ServersManager(availableServers[i], servers.get(ogAvailableServers[i]), self.url, this.category.context);
 				updateSeenStatus(this.layout != null ? this.layout.findViewById(R.id.name) : null, true, true);
 				dialogInterface.dismiss();
 

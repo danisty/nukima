@@ -4,6 +4,9 @@ import android.content.Context;
 import android.widget.Toast;
 
 import org.apache.commons.text.StringEscapeUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -43,7 +46,7 @@ class ServersManager {
 			Matcher m = p.matcher(page_raw_html);
 
 			for (Element server : doc.getElementsByClass("episode-page__servers-list").get(0).children()) {
-				m.find(); // Was this really necessary,,,
+				m.find();
 				servers.put(server.child(0).attr("title"), m.group(1));
 			}
 		} catch (Exception e) { e.printStackTrace(); }
@@ -85,11 +88,11 @@ class ServersManager {
 
 		if (matcher.find()) {
 			String script = matcher.group(1);
-			Pattern argsPattern = Pattern.compile("'(.+';)',(\\d+),(\\d+),'(.+)'\\.");
+			Pattern argsPattern = Pattern.compile("'(.+)',(\\d+),(\\d+),'(.+)'\\.");
 			Matcher args = argsPattern.matcher(script);
 			args.find();
 
-			Pattern urlPattern = Pattern.compile("src:\"([^\"]+)");
+			Pattern urlPattern = Pattern.compile("player.src\\(\"([^\"]+)");
 			Matcher urlMatch = urlPattern.matcher(Mp4UploadLink(
 				args.group(1),
 				Integer.parseInt(args.group(2)),

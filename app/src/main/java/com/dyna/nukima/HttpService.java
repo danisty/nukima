@@ -26,14 +26,11 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 class HttpService {
-	private final static String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 OPR/68.0.3618.197";
+	private final static String userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0";
 	private static final OkHttpClient client = new OkHttpClient();
 
 	static Response HttpGet(String url) throws IOException {
 		Request.Builder request = new Request.Builder() .url(url) .addHeader("user-agent", userAgent);
-		for (String cookie : MainActivity.cookiesRaw.split(";")) {
-			request.addHeader("Cookie", cookie.trim());
-		}
 		return client.newCall(request.build()).execute();
 	}
 

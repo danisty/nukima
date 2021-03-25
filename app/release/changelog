@@ -86,5 +86,13 @@
 	],
 	"2.5.9 - 24/12/20": [
 		"ARREGLO:Problemas guardando datos del usuario"
+	],
+	"2.6 - 15/2/21": [
+		"NUEVO:Copia de seguridad de los datos del usuario en caso de que el guardado falle",
+        "CAMBIO:Cloudflare bypass elminado temporalmente",
+        "ARREGLO:Arreglos generales"
+	],
+	"2.6.1 - 15/2/21": [
+        "ARREGLO:Arreglos generales"
 	]
 }

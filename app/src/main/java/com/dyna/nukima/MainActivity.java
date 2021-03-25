@@ -72,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
 	public static WeakReference<WebView> mainWebView;
 	public static Map<String, String> cookies;
 	public static String cookiesRaw;
-	public static String urlSecret;
 
 	public static class CustomArrayList<E> extends ArrayList<E> {
 
@@ -425,8 +424,13 @@ public class MainActivity extends AppCompatActivity {
 			File userDataFile = new File(context.getFilesDir().getAbsolutePath() + "/userdata.json");
 			String userDataString;
 			if (userDataFile.exists() && readFile(userDataFile).length() > 118) { // 118 -> default userdata size
+				File backupFile = new File(context.getExternalFilesDir(null) + File.separator + "backup.json");
 				userDataString = readFile(userDataFile);
-				exportFile(userDataFile, context.getExternalFilesDir("backups"), "userdataBackup");
+				if (backupFile.exists() && userDataString.length() < readFile(backupFile).length()) {
+					userDataString = readFile(backupFile);
+					userDataFile = backupFile;
+				}
+				exportFile(userDataFile, context.getExternalFilesDir(null), "backup.json");
 			} else {
 				userDataFile.createNewFile();
 				FileOutputStream userDataStream = new FileOutputStream(userDataFile);
@@ -507,7 +511,7 @@ public class MainActivity extends AppCompatActivity {
 			dst.mkdir();
 		}
 
-		File expFile = new File(dst.getPath() + File.separator + fileName + ".txt");
+		File expFile = new File(dst.getPath() + File.separator + fileName);
 		if (expFile.exists()) { expFile.delete(); }
 		FileChannel inChannel = null;
 		FileChannel outChannel = null;
@@ -568,9 +572,7 @@ public class MainActivity extends AppCompatActivity {
 
 		new Thread(()->{
 			try {
-				Response mainPage = HttpService.HttpGet(urlSecret);
-				Document doc = Jsoup.parse(mainPage.body().string());
-				System.out.println(doc);
+				Document doc = Jsoup.connect("https://animefenix.com/").get();
 				addAnimes("capitulos-grid", "overarchingdiv", newCategory, doc);
 				addAnimes("list-series", "image", recentCategory, doc);
 				addAnimes("home-slider", "image", popularCategory, doc);
