@@ -42,7 +42,7 @@ class ServersManager {
 			String page_raw_html = page_data.body().string();
 
 			Document doc = Jsoup.parse(page_raw_html);
-			Pattern p = Pattern.compile("<iframe width='100%' height='100%' src='(.+)' frameborder='0' noresize scrolling='no' allowfullscreen></iframe>");
+			Pattern p = Pattern.compile(".+src='(.+)' frame.+");
 			Matcher m = p.matcher(page_raw_html);
 
 			for (Element server : doc.getElementsByClass("episode-page__servers-list").get(0).children()) {
@@ -53,13 +53,19 @@ class ServersManager {
 		return servers;
 	}
 
+	private String getOriginalLink(String redirectUrl) throws IOException {
+		Response page_data = HttpService.HttpGet(redirectUrl.replace("amp;", ""));
+		Pattern p = Pattern.compile("playerContainer.innerHTML = '.+src=\"(.+)\" frame.+'");
+
+		Matcher m = p.matcher(page_data.body().string());
+		return m.find() ? m.group(1) : null;
+	}
+
 	public String Amazon(String serverUrl) throws IOException {
 		Response page_data = HttpService.HttpGet("https://www.animefenix.com" + serverUrl.substring(2));
 		Pattern p = Pattern.compile("file\":\"([^\"]+)?");
 
-		String content = page_data.body().string();
-		Matcher m = p.matcher(content);
-
+		Matcher m = p.matcher(page_data.body().string());
 		return m.find() ? StringEscapeUtils.unescapeJava(m.group(1)) : null;
 	}
 
@@ -123,7 +129,10 @@ class ServersManager {
 	}
 
 	public String getStreamingLink() {
-		try { return (String) ServersManager.class.getMethod(this.server, String.class).invoke(this, this.serverUrl); }
+		try {
+			String serverUrl = getOriginalLink(this.serverUrl);
+			return serverUrl != null ? (String) ServersManager.class.getMethod(this.server, String.class).invoke(this, serverUrl) : null;
+		}
 		catch (Exception e) {
 			e.printStackTrace();
 			return null;
