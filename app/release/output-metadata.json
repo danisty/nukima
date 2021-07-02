@@ -10,9 +10,9 @@
     {
       "type": "SINGLE",
       "filters": [],
-      "versionCode": 28,
-      "versionName": "2.7",
-      "outputFile": "app-release.apk"
+      "versionCode": 29,
+      "versionName": "2.7.1",
+      "outputFile": "nukima-release.apk"
     }
   ]
 }

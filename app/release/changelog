@@ -103,5 +103,8 @@
 		"NUEVO:Servidor Mega",
 		"NUEVO:Opción para importar/exportar datos del usuario",
 		"ARREGLO:Cierres inesperados con pérdida de datos"
+	],
+	"2.7.1 - 2/7/21": [
+		"ARREGLO:Changelog"
 	]
 }

@@ -353,10 +353,11 @@ public class MainActivity extends AppCompatActivity {
 			Activity main = this;
 			StorageReference storage = FirebaseStorage.getInstance().getReference();
 			PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-			File versionCodeFile = new File(getFilesDir().getAbsolutePath() + "version_name");
+			File versionCodeFile = new File(getFilesDir().getAbsolutePath() + File.separator + "version_name");
 			if (!versionCodeFile.exists()) versionCodeFile.createNewFile();
 			updateDownloader = new UpdateDownloader(this);
 
+			String localVersionCode = readFile(versionCodeFile);
 			Task<Uri> apkUrl = storage.child("nukima.apk").getDownloadUrl();
 			Task<Uri> clogUrl = storage.child("changelog").getDownloadUrl();
 			storage.child("version_code").getDownloadUrl().addOnSuccessListener(url -> new Thread(() -> {
@@ -376,8 +377,8 @@ public class MainActivity extends AppCompatActivity {
 
 						dialogBuilder.setCancelable(false);
 						runOnUiThread(() -> dialogBuilder.create().show());
-					} else if (versionCode != Integer.parseInt(readFile(versionCodeFile))) {
-						if (!readFile(versionCodeFile).isEmpty()) {
+					} else if (localVersionCode.isEmpty() || versionCode != Integer.parseInt(localVersionCode)) {
+						if (!localVersionCode.isEmpty()) {
 							String changelogUrl = clogUrl.getResult().toString();
 							JSONObject changelog = new JSONObject(HttpService.HttpGet(changelogUrl).body().string());
 							showChangeLog(changelog);
