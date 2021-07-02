@@ -2,41 +2,26 @@ package com.dyna.nukima;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.squareup.okhttp.Response;
-
-import org.apache.commons.lang3.ArrayUtils;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 class Episode {
 	private String name, url;
@@ -78,7 +63,11 @@ class Episode {
 					String streamingUrl = serverManager.getStreamingLink();
 					if (streamingUrl != null) {
 						Intent intent = new Intent(Intent.ACTION_VIEW);
-						intent.setDataAndType(Uri.parse(streamingUrl), "video/mp4");
+						if (serverManager.server.equals("Mega"))
+							intent.setData(Uri.parse(streamingUrl));
+						else
+							intent.setDataAndType(Uri.parse(streamingUrl), "video/mp4");
+						intent.putExtra("title", this.name);
 						self.category.context.startActivity(intent);
 					} else {
 						self.category.context.runOnUiThread(()->Toast.makeText(self.category.context, "Error on server", Toast.LENGTH_SHORT).show());

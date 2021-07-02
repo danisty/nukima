@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <item android:id="@+id/menu_import"
+        android:title="Import/Export"
+        android:icon="@drawable/import_export"
+        app:showAsAction="always"/>
+
     <item android:id="@+id/menu_history"
         android:title="History"
         android:icon="@drawable/ic_history"
@@ -17,5 +22,4 @@
         android:icon="@drawable/search"
         app:showAsAction="always|collapseActionView"
         app:actionViewClass="androidx.appcompat.widget.SearchView"/>
-
 </menu>

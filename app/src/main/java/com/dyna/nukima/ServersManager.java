@@ -25,7 +25,7 @@ class ServersManager {
 	public String episode;
 	public Context context;
 	public static String[] availableServers = {
-		"Amazon", "AmazonEs", "Sendvid", "Mp4upload"
+		"Amazon", "AmazonEs", "M:Mega", "Sendvid", "Mp4upload"
 	};
 
 	public ServersManager(String server, String serverUrl, String episode, Context context) {
@@ -77,6 +77,10 @@ class ServersManager {
 		Matcher m = p.matcher(content);
 
 		return m.find() ? StringEscapeUtils.unescapeJava(m.group(1)) : null;
+	}
+
+	public String Mega(String serverUrl) {
+		return serverUrl.replace("embed", "file");
 	}
 
 	public String Sendvid(String serverUrl) throws IOException {

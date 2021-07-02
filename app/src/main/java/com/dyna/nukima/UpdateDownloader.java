@@ -1,16 +1,14 @@
 package com.dyna.nukima;
 
-import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,11 +19,7 @@ import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.FileProvider;
-
 class UpdateDownloader extends AsyncTask<String, Integer, Boolean> {
-	public final Object permissionResponse = new Object();
 	private AlertDialog downloadProgress;
 	private WeakReference<Context> context;
 	private File tempApkFile;
@@ -79,10 +73,6 @@ class UpdateDownloader extends AsyncTask<String, Integer, Boolean> {
 
 	@Override
 	protected Boolean doInBackground(String... strings) {
-		checkExternalStoragePermissions();
-		if (!isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-			return doInBackground(strings);
-
 		InputStream input = null;
 		OutputStream output = null;
 		HttpURLConnection connection = null;
@@ -125,23 +115,5 @@ class UpdateDownloader extends AsyncTask<String, Integer, Boolean> {
 				connection.disconnect();
 		}
 		return true;
-	}
-
-	private void checkExternalStoragePermissions() {
-		try {
-			if (!isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) || !isGranted(android.Manifest.permission.READ_EXTERNAL_STORAGE)) {
-				String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
-				ActivityCompat.requestPermissions((Activity) context.get(), permissions, 1);
-				synchronized (permissionResponse) {
-					permissionResponse.wait();
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	private boolean isGranted(String permission) {
-		return context.get().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
 	}
 }

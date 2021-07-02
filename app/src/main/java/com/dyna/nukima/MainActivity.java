@@ -1,5 +1,6 @@
 package com.dyna.nukima;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.job.JobInfo;
@@ -9,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,17 +18,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.CookieManager;
-import android.webkit.WebChromeClient;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -52,7 +50,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
 	public static WeakReference<WebView> mainWebView;
 	public static Map<String, String> cookies;
 	public static String cookiesRaw;
+	public final Object permissionResponse = new Object();
 
 	public static class CustomArrayList<E> extends ArrayList<E> {
 
@@ -217,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
 		MenuItem search = menu.findItem(R.id.menu_search);
 		MenuItem fav = menu.findItem(R.id.menu_fav);
 		MenuItem history = menu.findItem(R.id.menu_history);
+		MenuItem importExport = menu.findItem(R.id.menu_import);
 
 		fav.setOnMenuItemClickListener(item -> {
 			Intent intent = new Intent(this, AnimeActivity.class);
@@ -296,6 +298,35 @@ public class MainActivity extends AppCompatActivity {
 				return false;
 			}
 		});
+
+		String[] options = {"Import Data", "Export Data"};
+		importExport.setOnMenuItemClickListener(item -> {
+			new Thread(() -> {
+				checkExternalStoragePermissions();
+				if (!isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+					runOnUiThread(()->Toast.makeText(this, "Error. Permissions not granted.", Toast.LENGTH_LONG).show());
+					return;
+				}
+
+				runOnUiThread(() -> new AlertDialog.Builder(this)
+					.setTitle("Data Options")
+					.setItems(options, (self, option) -> {
+						if (option == 0) { // Import Data
+							Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+							intent.addCategory(Intent.CATEGORY_OPENABLE);
+							intent.setType("*/*");
+							startActivityForResult(Intent.createChooser(intent, "Choose file to import"), 9161);
+						} else { // Export Data
+							Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+							intent.addCategory(Intent.CATEGORY_OPENABLE);
+							intent.setType("application/json");
+							intent.putExtra(Intent.EXTRA_TITLE, "nukima_data.json");
+							startActivityForResult(Intent.createChooser(intent, "Choose directory to export to"), 5522);
+						}
+					}).show());
+			}).start();
+			return false;
+		});
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -328,42 +359,38 @@ public class MainActivity extends AppCompatActivity {
 
 			Task<Uri> apkUrl = storage.child("nukima.apk").getDownloadUrl();
 			Task<Uri> clogUrl = storage.child("changelog").getDownloadUrl();
-			storage.child("version_code").getDownloadUrl().addOnSuccessListener(url -> {
-				new Thread(() -> {
-					try {
-						Response versionInfo = HttpService.HttpGet(url.toString());
-						int serverVersionCode = Integer.parseInt(versionInfo.body().string());
-						int versionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ?
-							(int) pInfo.getLongVersionCode() : pInfo.versionCode;
+			storage.child("version_code").getDownloadUrl().addOnSuccessListener(url -> new Thread(() -> {
+				try {
+					Response versionInfo = HttpService.HttpGet(url.toString());
+					int serverVersionCode = Integer.parseInt(versionInfo.body().string());
+					int versionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ?
+						(int) pInfo.getLongVersionCode() : pInfo.versionCode;
 
-						if (versionCode != serverVersionCode) {
-							AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(main)
-								.setTitle("New version available!")
-								.setMessage("Would you like to install the latest version of NUKIMA?");
+					if (versionCode != serverVersionCode) {
+						AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(main)
+							.setTitle("New version available!")
+							.setMessage("Would you like to install the latest version of NUKIMA?");
 
-							dialogBuilder.setNegativeButton("NO, THANKS", null);
-							dialogBuilder.setPositiveButton("YEAH", (dialogInterface, i) -> {
-								updateDownloader.execute(apkUrl.getResult().toString());
-							});
+						dialogBuilder.setNegativeButton("NO, THANKS", null);
+						dialogBuilder.setPositiveButton("YEAH", (dialogInterface, i) -> updateDownloader.execute(apkUrl.getResult().toString()));
 
-							dialogBuilder.setCancelable(false);
-							runOnUiThread(() -> dialogBuilder.create().show());
-						} else if (versionCode != Integer.parseInt(readFile(versionCodeFile))) {
-							if (!readFile(versionCodeFile).isEmpty()) {
-								String changelogUrl = clogUrl.getResult().toString();
-								JSONObject changelog = new JSONObject(HttpService.HttpGet(changelogUrl).body().string());
-								showChangeLog(changelog);
-							}
-
-							FileOutputStream versionCodeStream = new FileOutputStream(versionCodeFile);
-							versionCodeStream.write(Integer.toString(versionCode).getBytes());
-							versionCodeStream.close();
+						dialogBuilder.setCancelable(false);
+						runOnUiThread(() -> dialogBuilder.create().show());
+					} else if (versionCode != Integer.parseInt(readFile(versionCodeFile))) {
+						if (!readFile(versionCodeFile).isEmpty()) {
+							String changelogUrl = clogUrl.getResult().toString();
+							JSONObject changelog = new JSONObject(HttpService.HttpGet(changelogUrl).body().string());
+							showChangeLog(changelog);
 						}
-					} catch (Exception e) {
-						e.printStackTrace();
+
+						FileOutputStream versionCodeStream = new FileOutputStream(versionCodeFile);
+						versionCodeStream.write(Integer.toString(versionCode).getBytes());
+						versionCodeStream.close();
 					}
-				}).start();
-			});
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}).start());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -422,15 +449,13 @@ public class MainActivity extends AppCompatActivity {
 		try {
 			if (userData != null) return;
 			File userDataFile = new File(context.getFilesDir().getAbsolutePath() + "/userdata.json");
+			File backupFile = new File(context.getExternalFilesDir(null) + File.separator + "backup.json");
 			String userDataString;
 			if (userDataFile.exists() && readFile(userDataFile).length() > 118) { // 118 -> default userdata size
-				File backupFile = new File(context.getExternalFilesDir(null) + File.separator + "backup.json");
 				userDataString = readFile(userDataFile);
-				if (backupFile.exists() && userDataString.length() < readFile(backupFile).length()) {
-					userDataString = readFile(backupFile);
-					userDataFile = backupFile;
-				}
 				exportFile(userDataFile, context.getExternalFilesDir(null), "backup.json");
+			} else if (backupFile.exists()) {
+				userDataString = readFile(backupFile);
 			} else {
 				userDataFile.createNewFile();
 				FileOutputStream userDataStream = new FileOutputStream(userDataFile);
@@ -506,7 +531,9 @@ public class MainActivity extends AppCompatActivity {
 		return data.toString();
 	}
 
-	private static void exportFile(File src, File dst, String fileName) throws IOException {
+	private static void exportFile(File src, @Nullable File dst, String fileName) throws IOException {
+		if (dst == null)
+			return;
 		if (!dst.exists()) {
 			dst.mkdir();
 		}
@@ -591,9 +618,58 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	@Override
-	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-		synchronized (updateDownloader.permissionResponse) {
-			updateDownloader.permissionResponse.notify();
+	protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+
+		if (resultCode == RESULT_OK && data != null) {
+			try {
+				switch (requestCode) {
+					case 9161: // Import Data
+						InputStream importStream = getContentResolver().openInputStream(data.getData());
+						userData = new JSONObject(CharStreams.toString(new InputStreamReader(importStream, Charsets.UTF_8)));
+						updateUserData(this);
+						importStream.close();
+
+						Toast.makeText(this, "Imported data successfully.", Toast.LENGTH_LONG).show();
+						break;
+					case 5522: // Export Data
+						OutputStream exportStream = getContentResolver().openOutputStream(data.getData());
+						exportStream.write(userData.toString().getBytes());
+						exportStream.close();
+
+						Toast.makeText(this, "Exported data successfully.", Toast.LENGTH_LONG).show();
+						break;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				Toast.makeText(this, "Error. Couldn't get path.", Toast.LENGTH_LONG).show();
+			}
+		}
+	}
+
+	private void checkExternalStoragePermissions() {
+		try {
+			if (!isGranted(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) || !isGranted(android.Manifest.permission.READ_EXTERNAL_STORAGE)) {
+				String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+				ActivityCompat.requestPermissions(this, permissions, 1);
+				synchronized (permissionResponse) {
+					permissionResponse.wait();
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private boolean isGranted(String permission) {
+		return checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		synchronized (permissionResponse) {
+			permissionResponse.notify();
 		}
 	}
 }
