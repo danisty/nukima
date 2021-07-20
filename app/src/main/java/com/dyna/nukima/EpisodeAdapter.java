@@ -55,7 +55,7 @@ class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHolder> {
 
 		Episode episode = episodes.size() > position ? episodes.get(position) : null;
 		if (episode == null) {
-			episode = new Episode(this.animeName, name, url, this.activity.get(), holder.name.getRootView());
+			episode = new Episode(this.animeName + " " + name.split(" ")[1], name, url, this.activity.get(), holder.name.getRootView());
 			episodes.add(position, episode);
 		}
 
