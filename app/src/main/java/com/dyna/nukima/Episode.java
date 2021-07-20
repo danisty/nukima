@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.view.View;
-import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -24,14 +23,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class Episode {
-	private String name, url;
-	private Category category;
+	private String name, url, animeName;
+	private Activity context;
 	private View layout = null;
 	
-	public Episode(String name, String url, Category category) {
+	public Episode(String animeName, String name, String url, Activity context, View layout) {
+		this.animeName = animeName;
 		this.name = name;
 		this.url = url;
-		this.category = category;
+		this.context = context;
+		this.layout = layout;
 	}
 
 	public String[] filterServers(String[] availableServers, HashMap<String, String> servers, boolean og) {
@@ -50,12 +51,12 @@ class Episode {
 		final HashMap<String, String> servers = ServersManager.getServers(self.url);
 		final String[] availableServers = filterServers(ServersManager.availableServers, servers, false);
 		final String[] ogAvailableServers = filterServers(ServersManager.availableServers, servers, true);
-		final AlertDialog.Builder mBuilder = new AlertDialog.Builder(self.category.context);
+		final AlertDialog.Builder mBuilder = new AlertDialog.Builder(context);
 
-		self.category.context.runOnUiThread(() -> {
+		context.runOnUiThread(() -> {
 			mBuilder.setTitle("Choose a server");
 			mBuilder.setSingleChoiceItems(availableServers, -1, (dialogInterface, i) -> {
-				ServersManager serverManager = new ServersManager(availableServers[i], servers.get(ogAvailableServers[i]), self.url, this.category.context);
+				ServersManager serverManager = new ServersManager(availableServers[i], servers.get(ogAvailableServers[i]), self.url, this.context);
 				updateSeenStatus(this.layout != null ? this.layout.findViewById(R.id.name) : null, true, true);
 				dialogInterface.dismiss();
 
@@ -67,10 +68,10 @@ class Episode {
 							intent.setData(Uri.parse(streamingUrl));
 						else
 							intent.setDataAndType(Uri.parse(streamingUrl), "video/mp4");
-						intent.putExtra("title", this.name);
-						self.category.context.startActivity(intent);
+						intent.putExtra("title", this.animeName);
+						context.startActivity(intent);
 					} else {
-						self.category.context.runOnUiThread(()->Toast.makeText(self.category.context, "Error on server", Toast.LENGTH_SHORT).show());
+						context.runOnUiThread(()->Toast.makeText(context, "Error on server", Toast.LENGTH_SHORT).show());
 					}
 				}).start();
 			}).create().show();
@@ -84,12 +85,12 @@ class Episode {
 			Matcher matcher = pattern.matcher(this.name);
 			matcher.find();
 
-			String animeName = this.category.name.trim();
+			String animeName = this.animeName;
 			Integer episodeNum = Integer.parseInt(matcher.group(1));
 
-			MainActivity.checkUserData(this.category.context);
+			MainActivity.checkUserData(this.context);
 			ArrayList<Integer> episodesList =  MainActivity.getIntegerArrayList(MainActivity.userData.getJSONObject("animes"), animeName);
-			int colorAccent = this.category.context.getResources().getColor(R.color.colorAccent, null);
+			int colorAccent = this.context.getResources().getColor(R.color.colorAccent, null);
 			boolean episodeSeen = watch == null && episodesList.contains(episodeNum);
 			if (episode != null) {
 				episode.setTextColor(episodeSeen ? reverse ? Color.WHITE : colorAccent : reverse ? colorAccent : Color.WHITE);
@@ -103,25 +104,25 @@ class Episode {
 			if (episodesList.size() == 0) {
 				MainActivity.userData.getJSONObject("animes").remove(animeName);
 			}
-			MainActivity.updateUserData(this.category.context);
+			MainActivity.updateUserData(this.context);
 
 			if (watch != null) {
 				new Thread(()-> {
 					try {
-						String animeNameEp = this.category.name + " " + episodeNum.toString();
+						String animeNameEp = this.animeName + " " + episodeNum.toString();
 						JSONObject history = MainActivity.userData.getJSONObject("history");
 						boolean animeExistsOnHistory = history.has(animeNameEp);
 						if (animeExistsOnHistory) { history.remove(animeNameEp); }
 
 						String[] animeInfo = this.getData();
 						JSONObject animeData = new JSONObject()
-							.put("animeName", this.category.name)
+							.put("animeName", this.animeName)
 							.put("animeImg", animeInfo[0])
 							.put("episodeNum", episodeNum.toString())
 							.put("animeUrl", this.url.substring(0, this.url.lastIndexOf("-")).replace("ver/", ""))
 							.put("airing", animeInfo[1]);
 						history.put(animeNameEp, animeData);
-						MainActivity.updateUserData(this.category.context);
+						MainActivity.updateUserData(this.context);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -129,7 +130,7 @@ class Episode {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			Toast.makeText(this.category.context, "Something went wrong: " + e.getMessage(), Toast.LENGTH_LONG).show();
+			Toast.makeText(this.context, "Something went wrong: " + e.getMessage(), Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -141,18 +142,18 @@ class Episode {
 		};
 	}
 	
-	public View configure(final View episode) {
+	public View configure(final EpisodeAdapter.ViewHolder episode) {
 		try {
 			final Episode self = this;
-			this.category.context.runOnUiThread(() -> {
-				TextView ep = episode.findViewById(R.id.name);
+			this.context.runOnUiThread(() -> {
+				TextView ep = episode.name;
 				ep.setText(self.name);
 				ep.setActivated(false);
 
-				episode.findViewById(R.id.play).setOnClickListener(v -> new Thread(self::watch).start());
-				episode.findViewById(R.id.name).setOnClickListener(v -> updateSeenStatus(ep, true, null));
-				episode.findViewById(R.id.comment).setOnClickListener(v -> {
-					WebView commentsWebView = this.category.layout.getRootView().findViewById(R.id.commentsWebView);
+				episode.play.setOnClickListener(v -> new Thread(self::watch).start());
+				episode.name.setOnClickListener(v -> updateSeenStatus(ep, true, null));
+				episode.comments.setOnClickListener(v -> {
+					WebView commentsWebView = this.layout.getRootView().getRootView().findViewById(R.id.commentsWebView);
 					commentsWebView.setVisibility(View.VISIBLE);
 
 					String disqusPost = this.getDisqusPost();
@@ -164,21 +165,11 @@ class Episode {
 				});
 				updateSeenStatus(ep, false, null);
 			});
-			return episode;
 		} catch (Exception e) { e.printStackTrace(); }
 		return null;
 	}
 
 	private String getDisqusPost() {
 		return String.format("<div id='disqus_thread'></div><script>var disqus_config=function (){this.page.url='%s';this.page.identifier='%s';};(function(){var d=document, s=d.createElement('script');s.src='https://animefenix.disqus.com/embed.js';s.setAttribute('data-timestamp', + new Date());(d.head || d.body).appendChild(s);})();</script>", this.url, this.url.substring(23));
-	}
-	
-	public void inflateView(Activity context) {
-		final View layout = this.category.layout;
-		final View episode = configure(context.getLayoutInflater().inflate(R.layout.episode, null));
-		this.layout = episode;
-		category.context.runOnUiThread(() -> {
-			((ViewGroup) layout.findViewById(R.id.itemHolder)).addView(episode);
-		});
 	}
 }

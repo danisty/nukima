@@ -5,11 +5,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
 
 class Category {
 	public String name;
@@ -34,17 +34,12 @@ class Category {
 
 			RecyclerView recycler = category.findViewById(R.id.category);
 			LinearLayoutManager layoutManager = new LinearLayoutManager(self.context, LinearLayoutManager.HORIZONTAL, false);
-			AnimeAdapter mAdapter = new AnimeAdapter();
+			AnimeAdapter mAdapter = new AnimeAdapter(this.context);
 
 			recycler.setHasFixedSize(true);
 			recycler.setLayoutManager(layoutManager);
 			recycler.setAdapter(mAdapter);
 		});
-	}
-
-	public void addEpisode(String name, String url) {
-		Episode episode = new Episode(name, url, this);
-		episode.inflateView(this.context);
 	}
 
 	public void inflateView(@Nullable View parent) {

@@ -1,12 +1,8 @@
 package com.dyna.nukima;
 
 import android.content.Context;
-import android.widget.Toast;
 
 import org.apache.commons.text.StringEscapeUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -42,8 +38,8 @@ class ServersManager {
 			String page_raw_html = page_data.body().string();
 
 			Document doc = Jsoup.parse(page_raw_html);
-			Pattern p = Pattern.compile(".+src='(.+)' frame.+");
-			Matcher m = p.matcher(page_raw_html);
+			Pattern p = Pattern.compile(" src='(.+)' frame");
+			Matcher m = p.matcher(page_raw_html.substring(page_raw_html.indexOf("tabsArray")));
 
 			for (Element server : doc.getElementsByClass("episode-page__servers-list").get(0).children()) {
 				m.find();

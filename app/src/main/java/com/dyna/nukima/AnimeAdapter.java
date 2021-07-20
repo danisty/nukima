@@ -3,37 +3,31 @@ package com.dyna.nukima;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.UrlConnectionDownloader;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import androidx.annotation.NonNull;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.recyclerview.widget.RecyclerView;
 
 class AnimeAdapter extends RecyclerView.Adapter<AnimeAdapter.MyViewHolder> {
 	private LayoutInflater inflater;
 	private ArrayList<String[]> data;
+	private WeakReference<Activity> activity;
+
+	AnimeAdapter(Activity context) {
+		this.activity = new WeakReference<>(context);
+	}
 
 	public static class MyViewHolder extends RecyclerView.ViewHolder {
 		public View parent;
@@ -81,7 +75,7 @@ class AnimeAdapter extends RecyclerView.Adapter<AnimeAdapter.MyViewHolder> {
 			} else {
 				Pattern pattern = Pattern.compile("(.+) (\\d+)");
 				Matcher matcher = pattern.matcher(animeName); matcher.find();
-				new Thread(new Episode(animeName, animeUrl, new Category(matcher.group(1), null, (Activity) holder.context))::watch).start();
+				new Thread(new Episode(animeName, animeName, animeUrl, this.activity.get(), null)::watch).start();
 			}
 		});
 		holder.clickListener.setOnLongClickListener(view -> {

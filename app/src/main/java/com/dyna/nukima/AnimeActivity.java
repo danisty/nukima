@@ -7,22 +7,28 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.webkit.WebView;
-
-import org.json.JSONObject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import okhttp3.Response;
 
@@ -76,21 +82,30 @@ public class AnimeActivity extends AppCompatActivity {
 			}).start();
 		}
 
-		RecyclerView animeFavs = findViewById(R.id.animeRecycler);
-		animeFavs.setHasFixedSize(true);
-		animeFavs.setItemViewCacheSize(20);
-
-		LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-		animeFavs.setLayoutManager(layoutManager);
-
-		SearchAdapter mAdapter = new SearchAdapter(true);
-		animeFavs.setAdapter(mAdapter);
 		toolbar.setTitle(animeName);
 
 		if (intent.getBooleanExtra("favorites", false)) {
-			loadFavorites(animeFavs);
+			RecyclerView animeFavs = findViewById(R.id.animeRecycler);
+			animeFavs.setHasFixedSize(true);
+			animeFavs.setItemViewCacheSize(20);
+
+			LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+			animeFavs.setLayoutManager(layoutManager);
+
+			SearchAdapter mAdapter = new SearchAdapter(true);
+			animeFavs.setAdapter(mAdapter);
+			loadFavorites(mAdapter);
 		} else {
-			loadEpisodes();
+			RecyclerView episodes = findViewById(R.id.episodesRecycler);
+			episodes.setHasFixedSize(true);
+			episodes.setItemViewCacheSize(20);
+
+			LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+			episodes.setLayoutManager(layoutManager);
+
+			EpisodeAdapter mAdapter = new EpisodeAdapter(animeName, this);
+			episodes.setAdapter(mAdapter);
+			loadEpisodes(mAdapter);
 		}
 	}
 
@@ -207,7 +222,7 @@ public class AnimeActivity extends AppCompatActivity {
 		}
 	}
 
-	public void loadFavorites(RecyclerView animeFavs) {
+	public void loadFavorites(SearchAdapter animeFavs) {
 		this.findViewById(R.id.animeRecycler).setVisibility(View.VISIBLE);
 		this.findViewById(R.id.animeScrollView).setVisibility(View.INVISIBLE);
 		new Thread(() -> {
@@ -218,28 +233,72 @@ public class AnimeActivity extends AppCompatActivity {
 				ArrayList<String[]> allData = new ArrayList<>();
 
 				if (watching.size() > 0) allData.add(new String[]{"Watching"});
-				for (String[] anime : watching) allData.add(anime);
+				allData.addAll(watching);
 
 				if (completed.size() > 0) allData.add(new String[]{"Completed"});
-				for (String[] anime : completed) allData.add(anime);
+				allData.addAll(completed);
 
-				runOnUiThread(()->((SearchAdapter) animeFavs.getAdapter()).setData(allData));
+				runOnUiThread(()->animeFavs.setData(allData));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}).start();
 	}
 
-	public void loadEpisodes() {
-		Category episodes = new Category(animeName, findViewById(R.id.itemHolder).getRootView().getRootView(), this);
+	String[] infoData = {"Type", "Status", "Episodes", "Views", "NextEpisode"};
+	public void loadEpisodes(EpisodeAdapter episodes) {
 		new Thread(() -> {
 			try {
 				Response page_data = HttpService.HttpGet(animeUrl);
 				Document doc = Jsoup.parse(page_data.body().string());
-				for (Element episode : doc.getElementsByClass("d-inline-flex")) {
-					episodes.addEpisode(episode.child(0).text(), episode.attr("href"));
+
+				// Anime info
+				Elements info = doc.getElementsByClass("has-text-light").get(1).children();
+				String rating = doc.getElementsByClass("points").get(0).text();
+				if (info.size() > 4) {
+					if (info.size() > 6)
+						info.remove(4);
+					info.remove(4);
 				}
-			} catch (IOException e) {
+
+				HashMap<String, String> animeInfo = new HashMap<>();
+				for (int i=0; i<info.size(); i++) {
+					System.out.println(i);
+					String e = infoData[i];
+					animeInfo.put(e, info.get(i).childNode(1).toString().trim());
+				}
+
+				runOnUiThread(() -> {
+					ImageView animeImage = findViewById(R.id.animeImg);
+					TextView animeInfoTV = findViewById(R.id.animeInfo);
+					TextView nextEpisode = findViewById(R.id.nextEpisode);
+					boolean finished = animeInfo.get("Status") == null || animeInfo.get("Status").equals("Finalizado");
+
+					nextEpisode.setText(finished ? "Unknown" : animeInfo.get("NextEpisode"));
+					animeInfoTV.setText(String.format(animeInfoTV.getText().toString().replace("Loading...", "%s"),
+							rating,
+							animeInfo.get("Type"),
+							finished ? "Finished" : "Airing",
+							animeInfo.get("Episodes"),
+							animeInfo.get("Views")
+					));
+
+					animeImage.setImageDrawable(null);
+					Glide.with(this).clear(animeImage);
+					Glide.with(this).load(animeImg).fitCenter().transition(DrawableTransitionOptions.withCrossFade(100)).into(animeImage);
+				});
+
+				// Episodes
+				ArrayList<String[]> eps = new ArrayList<>();
+				for (Element episode : doc.getElementsByClass("d-inline-flex")) {
+					eps.add(new String[]{
+							episode.child(0).text(),
+							episode.attr("href")
+					});
+				}
+				// Collections.reverse(eps);
+				runOnUiThread(()->episodes.setData(eps));
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}).start();
