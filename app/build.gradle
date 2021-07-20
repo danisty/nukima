@@ -9,8 +9,8 @@ android {
         applicationId "com.dyna.nukima"
         minSdkVersion 23
         targetSdkVersion 30
-        versionCode 32
-        versionName '2.8.1'
+        versionCode 33
+        versionName '2.8.2'
 
         setProperty("archivesBaseName", "nukima")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

@@ -10,8 +10,8 @@
     {
       "type": "SINGLE",
       "filters": [],
-      "versionCode": 32,
-      "versionName": "2.8.1",
+      "versionCode": 33,
+      "versionName": "2.8.2",
       "outputFile": "nukima-release.apk"
     }
   ]

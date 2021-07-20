@@ -75,7 +75,7 @@ class AnimeAdapter extends RecyclerView.Adapter<AnimeAdapter.MyViewHolder> {
 			} else {
 				Pattern pattern = Pattern.compile("(.+) (\\d+)");
 				Matcher matcher = pattern.matcher(animeName); matcher.find();
-				new Thread(new Episode(animeName, animeName, animeUrl, this.activity.get(), null)::watch).start();
+				new Thread(new Episode(matcher.group(1), "Episodio " + matcher.group(2), animeUrl, this.activity.get(), null)::watch).start();
 			}
 		});
 		holder.clickListener.setOnLongClickListener(view -> {
