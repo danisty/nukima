@@ -3,6 +3,9 @@ package com.dyna.nukima;
 import android.content.Context;
 
 import org.apache.commons.text.StringEscapeUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -21,7 +24,7 @@ class ServersManager {
 	public String episode;
 	public Context context;
 	public static String[] availableServers = {
-		"Amazon", "AmazonEs", "M:Mega", "Sendvid", "Mp4upload"
+		"Amazon", "AmazonEs", "M:Mega", "Fembed", "Sendvid", "Mp4upload"
 	};
 
 	public ServersManager(String server, String serverUrl, String episode, Context context) {
@@ -34,12 +37,12 @@ class ServersManager {
 	public static HashMap<String, String> getServers(String episodeUrl) {
 		HashMap<String, String> servers = new HashMap<>();
 		try {
-			Response page_data = HttpService.HttpGet(episodeUrl);
-			String page_raw_html = page_data.body().string();
+			Response pageData = HttpService.HttpGet(episodeUrl);
+			String pageRawHtml = pageData.body().string();
 
-			Document doc = Jsoup.parse(page_raw_html);
+			Document doc = Jsoup.parse(pageRawHtml);
 			Pattern p = Pattern.compile(" src='(.+)' frame");
-			Matcher m = p.matcher(page_raw_html.substring(page_raw_html.indexOf("tabsArray")));
+			Matcher m = p.matcher(pageRawHtml.substring(pageRawHtml.indexOf("tabsArray")));
 
 			for (Element server : doc.getElementsByClass("episode-page__servers-list").get(0).children()) {
 				m.find();
@@ -50,26 +53,26 @@ class ServersManager {
 	}
 
 	private String getOriginalLink(String redirectUrl) throws IOException {
-		Response page_data = HttpService.HttpGet(redirectUrl.replace("amp;", ""));
+		Response pageData = HttpService.HttpGet(redirectUrl.replace("amp;", ""));
 		Pattern p = Pattern.compile("playerContainer.innerHTML = '.+src=\"(.+)\" frame.+'");
 
-		Matcher m = p.matcher(page_data.body().string());
+		Matcher m = p.matcher(pageData.body().string());
 		return m.find() ? m.group(1) : null;
 	}
 
 	public String Amazon(String serverUrl) throws IOException {
-		Response page_data = HttpService.HttpGet("https://www.animefenix.com" + serverUrl.substring(2));
+		Response pageData = HttpService.HttpGet("https://www.animefenix.com" + serverUrl.substring(2));
 		Pattern p = Pattern.compile("file\":\"([^\"]+)?");
 
-		Matcher m = p.matcher(page_data.body().string());
+		Matcher m = p.matcher(pageData.body().string());
 		return m.find() ? StringEscapeUtils.unescapeJava(m.group(1)) : null;
 	}
 
 	public String AmazonEs(String serverUrl) throws IOException {
-		Response page_data = HttpService.HttpGet(("https://www.animefenix.com" + serverUrl).replace("amp;", ""));
+		Response pageData = HttpService.HttpGet(("https://www.animefenix.com" + serverUrl).replace("amp;", ""));
 		Pattern p = Pattern.compile("file\":\"([^\"]+)?");
 
-		String content = page_data.body().string();
+		String content = pageData.body().string();
 		Matcher m = p.matcher(content);
 
 		return m.find() ? StringEscapeUtils.unescapeJava(m.group(1)) : null;
@@ -79,18 +82,33 @@ class ServersManager {
 		return serverUrl.replace("embed", "file");
 	}
 
+	public String Fembed(String serverUrl) throws IOException, JSONException {
+		String apiUrl = serverUrl.replace("/v/", "/api/source/");
+
+		HashMap<String, String> data = new HashMap<>();
+		data.put("d", "www.fembed.com");
+		data.put("r", "");
+
+		Response pageData = HttpService.HttpPost(apiUrl, data);
+		JSONObject videoData = new JSONObject(pageData.body().string());
+
+		JSONArray videos = videoData.getJSONArray("data");
+		String videoUrl = videos.getJSONObject(videos.length() - 1).getString("file");
+		return StringEscapeUtils.unescapeJava(videoUrl);
+	}
+
 	public String Sendvid(String serverUrl) throws IOException {
-		Response page_data = HttpService.HttpGet(serverUrl);
-		Document doc = Jsoup.parse(page_data.body().string());
+		Response pageData = HttpService.HttpGet(serverUrl);
+		Document doc = Jsoup.parse(pageData.body().string());
 
 		Elements source = doc.getElementsByTag("source");
 		return source.size() > 0 ? source.get(0).attr("src") : null;
 	}
 
 	public String Mp4upload(String serverUrl) throws IOException {
-		Response page_data = HttpService.HttpGet(serverUrl);
+		Response pageData = HttpService.HttpGet(serverUrl);
 		Pattern pattern = Pattern.compile("eval(\\([^*]+\\))");
-		Matcher matcher = pattern.matcher(page_data.body().string());
+		Matcher matcher = pattern.matcher(pageData.body().string());
 
 		if (matcher.find()) {
 			String script = matcher.group(1);

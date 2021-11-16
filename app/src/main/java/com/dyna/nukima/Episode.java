@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class Episode {
-	private String name, url, animeName;
+	private String name, url, num, animeName;
 	private Activity context;
 	private View layout = null;
 	
@@ -33,6 +33,7 @@ class Episode {
 		this.url = url;
 		this.context = context;
 		this.layout = layout;
+		this.num = name.split(" ")[1];
 	}
 
 	public String[] filterServers(String[] availableServers, HashMap<String, String> servers, boolean og) {
@@ -68,7 +69,7 @@ class Episode {
 							intent.setData(Uri.parse(streamingUrl));
 						else
 							intent.setDataAndType(Uri.parse(streamingUrl), "video/mp4");
-						intent.putExtra("title", this.animeName);
+						intent.putExtra("title", this.animeName + " " + this.num);
 						context.startActivity(intent);
 					} else {
 						context.runOnUiThread(()->Toast.makeText(context, "Error on server", Toast.LENGTH_SHORT).show());

@@ -80,11 +80,9 @@ public class MainActivity extends AppCompatActivity {
 		@Override
 		@RequiresApi(api = Build.VERSION_CODES.N)
 		public String toString() {
-			String quote = "\"";
 			String result = "";
 			for (E value : this) {
-				result = result.equals("") ? quote + value + quote :
-					result + ",\"" + value + quote;
+				result = result.equals("") ? ('"' + value.toString() + '"') : (result + ",\"" + value.toString() + '"');
 			}
 			return "[" + result  + "]";
 		}

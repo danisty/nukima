@@ -13,14 +13,14 @@ import android.content.Intent;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
 
+import androidx.core.app.NotificationCompat;
+
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
-
-import androidx.core.app.NotificationCompat;
 
 public class NotificationsService extends JobService {
 	public static String CHANNEL_ID = "anime_updates";
@@ -49,14 +49,11 @@ public class NotificationsService extends JobService {
 				Document soup = Jsoup.connect("https://www.animefenix.com").get();
 				MainActivity.CustomArrayList<String> recentEpisodes = MainActivity.getStringArrayList(MainActivity.userData, "recentEpisodes");
 				MainActivity.CustomArrayList<String> recentAnimes = MainActivity.getStringArrayList(MainActivity.userData, "recentAnimes");
-				MainActivity.CustomArrayList<String> actualRecentEpisodes = new MainActivity.CustomArrayList<>();
-				MainActivity.CustomArrayList<String> actualRecentAnimes = new MainActivity.CustomArrayList<>();
 				JSONObject favorites = MainActivity.userData.getJSONObject("favorites");
 
 				for (Element episode : soup.getElementsByClass("capitulos-grid").get(0).children()) {
 					if (jobCancelled) return;
 					Element animeInfo = episode.getElementsByClass("overarchingdiv").get(0).child(0);
-					actualRecentEpisodes.add(animeInfo.attr("title"));
 
 					if (!recentEpisodes.contains(animeInfo.attr("title"))) {
 						String animeName = animeInfo.attr("title");
@@ -79,7 +76,6 @@ public class NotificationsService extends JobService {
 				for (Element anime : soup.getElementsByClass("list-series").get(0).children()) {
 					if (jobCancelled) return;
 					Element animeInfo = anime.getElementsByClass("image").get(0).child(0);
-					actualRecentAnimes.add(animeInfo.attr("title"));
 
 					if (!recentAnimes.contains(animeInfo.attr("title"))) {
 						String animeName = animeInfo.attr("title");
@@ -99,23 +95,21 @@ public class NotificationsService extends JobService {
 						}
 					}
 				}
-				for (String e : (ArrayList<String>) recentEpisodes.clone()) {
-					if (!actualRecentEpisodes.contains(e)) {
-						recentEpisodes.remove(e);
-					}
+
+				for (int i=0; i < recentEpisodes.size() - 36; i++) {
+					recentEpisodes.remove(recentEpisodes.size() - 1);
 				}
-				for (String e : (ArrayList<String>) recentAnimes.clone()) {
-					if (!actualRecentAnimes.contains(e)) {
-						recentAnimes.remove(e);
-					}
+				for (int i=0; i < recentAnimes.size() - 15; i++) {
+					recentAnimes.remove(recentAnimes.size() - 1);
 				}
+
 				MainActivity.ignoreNews = false;
 				MainActivity.updateUserData(context);
 				scheduleRefresh(); jobFinished(params, false);
-				// sendNotification(context, "Job finished!", "UWU");
+				//sendNotification(context, "Job finished!", "UWU");
 			} catch (Exception e) {
 				e.printStackTrace();
-				// sendNotification(context, "Sometehing went wrong", "UNU: " + e.getMessage());
+				//sendNotification(context, "Something went wrong", "UNU: " + e.getMessage());
 			}
 		}).start();
 	}
@@ -123,7 +117,7 @@ public class NotificationsService extends JobService {
 	private void scheduleRefresh() {
 		ComponentName component = new ComponentName(getPackageName(), NotificationsService.class.getName());
 		JobInfo info = new JobInfo.Builder(25, component)
-			.setMinimumLatency(60 * 1000)
+			.setMinimumLatency(1000)
 			.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
 			.setPersisted(true)
 			.build();
