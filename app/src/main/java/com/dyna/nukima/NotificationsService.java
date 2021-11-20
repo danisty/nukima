@@ -97,10 +97,10 @@ public class NotificationsService extends JobService {
 				}
 
 				for (int i=0; i < recentEpisodes.size() - 36; i++) {
-					recentEpisodes.remove(recentEpisodes.size() - 1);
+					recentEpisodes.remove(1);
 				}
 				for (int i=0; i < recentAnimes.size() - 15; i++) {
-					recentAnimes.remove(recentAnimes.size() - 1);
+					recentAnimes.remove(1);
 				}
 
 				MainActivity.ignoreNews = false;
@@ -117,7 +117,7 @@ public class NotificationsService extends JobService {
 	private void scheduleRefresh() {
 		ComponentName component = new ComponentName(getPackageName(), NotificationsService.class.getName());
 		JobInfo info = new JobInfo.Builder(25, component)
-			.setMinimumLatency(1000)
+			.setMinimumLatency(5 * 60 * 1000)
 			.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
 			.setPersisted(true)
 			.build();
