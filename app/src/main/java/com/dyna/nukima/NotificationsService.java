@@ -49,16 +49,19 @@ public class NotificationsService extends JobService {
 				Document soup = Jsoup.connect("https://www.animefenix.com").get();
 				MainActivity.CustomArrayList<String> recentEpisodes = MainActivity.getStringArrayList(MainActivity.userData, "recentEpisodes");
 				MainActivity.CustomArrayList<String> recentAnimes = MainActivity.getStringArrayList(MainActivity.userData, "recentAnimes");
+				MainActivity.CustomArrayList<String> actualRecentEpisodes = new MainActivity.CustomArrayList<>();
+				MainActivity.CustomArrayList<String> actualRecentAnimes = new MainActivity.CustomArrayList<>();
 				JSONObject favorites = MainActivity.userData.getJSONObject("favorites");
 
 				for (Element episode : soup.getElementsByClass("capitulos-grid").get(0).children()) {
 					if (jobCancelled) return;
 					Element animeInfo = episode.getElementsByClass("overarchingdiv").get(0).child(0);
+					String animeName = animeInfo.attr("title");
+					actualRecentEpisodes.add(animeName);
 
-					if (!recentEpisodes.contains(animeInfo.attr("title"))) {
-						String animeName = animeInfo.attr("title");
+					if (!recentEpisodes.contains(animeName)) {
 						String animeUrl = animeInfo.attr("href");
-						recentEpisodes.add(animeName);
+						// recentEpisodes.add(escapedEpisodeName);
 
 						if (!MainActivity.ignoreNews) {
 							String[] episodeAnimeInfo = MainActivity.getAnimeInfo(animeName, animeUrl);
@@ -76,13 +79,14 @@ public class NotificationsService extends JobService {
 				for (Element anime : soup.getElementsByClass("list-series").get(0).children()) {
 					if (jobCancelled) return;
 					Element animeInfo = anime.getElementsByClass("image").get(0).child(0);
+					String animeName = animeInfo.attr("title");
+					actualRecentAnimes.add(animeName);
 
-					if (!recentAnimes.contains(animeInfo.attr("title"))) {
-						String animeName = animeInfo.attr("title");
+					if (!recentAnimes.contains(animeName)) {
 						String animeImg = animeInfo.child(0).attr("src");
 						String animeUrl = animeInfo.attr("href");
 						String airing = anime.getElementsByClass("airing").size() > 0 ? "Airing" : "Finished";
-						recentAnimes.add(animeName);
+						// recentAnimes.add(animeName);
 
 						if (!MainActivity.ignoreNews) {
 							Intent animeIntent = new Intent(context, AnimeActivity.class);
@@ -96,12 +100,8 @@ public class NotificationsService extends JobService {
 					}
 				}
 
-				for (int i=0; i < recentEpisodes.size() - 36; i++) {
-					recentEpisodes.remove(1);
-				}
-				for (int i=0; i < recentAnimes.size() - 15; i++) {
-					recentAnimes.remove(1);
-				}
+				MainActivity.userData.put("recentEpisodes", actualRecentEpisodes);
+				MainActivity.userData.put("recentAnimes", actualRecentAnimes);
 
 				MainActivity.ignoreNews = false;
 				MainActivity.updateUserData(context);

@@ -2,8 +2,8 @@ package com.dyna.nukima;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Color;
-import android.transition.Transition;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,21 +11,21 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.TransitionOptions;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.bumptech.glide.request.transition.DrawableCrossFadeFactory;
-
-import java.util.ArrayList;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+
+import java.util.ArrayList;
 
 class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	private ArrayList<String[]> data;
 	public boolean favorites = false;
 	static int TYPE_ANIME = 0;
 	static int TYPE_CATEGORY = 1;
+	static int completedAnimesIndex;
+	static int[] colors;
 
 	public SearchAdapter() {}
 	public SearchAdapter(boolean favorites) { this.favorites = favorites; }
@@ -96,6 +96,13 @@ class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	@NonNull
 	@Override
 	public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+		if (colors == null) {
+			Resources res = parent.getContext().getResources();
+			colors = new int[] {
+					res.getColor(R.color.colorPrimary, null),
+					res.getColor(R.color.colorPrimaryDark, null)
+			};
+		}
 		if (viewType == TYPE_ANIME) {
 			View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.anime_search, parent, false);
 			return new AnimeViewHolder(v, parent.getContext());
@@ -112,6 +119,7 @@ class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		} else {
 			((CategoryViewHolder) holder).setDetails(data.get(position));
 		}
+		holder.itemView.setBackgroundColor(position >= completedAnimesIndex ? colors[1] : colors[0]);
 	}
 
 	@Override
@@ -121,6 +129,12 @@ class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 	public void setData(ArrayList<String[]> data) {
 		this.data = data;
+		for (int i = 0; i < data.size(); i++) {
+			if (data.get(i)[0] == "Completed") {
+				completedAnimesIndex = i;
+				break;
+			}
+		}
 		this.notifyDataSetChanged();
 	}
 }

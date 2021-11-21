@@ -29,6 +29,7 @@ import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.gms.tasks.Task;
 import com.google.common.base.Charsets;
@@ -36,6 +37,7 @@ import com.google.common.io.CharStreams;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,6 +62,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.Response;
 
@@ -73,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
 	public static Map<String, String> cookies;
 	public static String cookiesRaw;
 	public final Object permissionResponse = new Object();
+	public SwipeRefreshLayout pullToRefresh;
+
+	public MainActivity() {
+	}
 
 	public static class CustomArrayList<E> extends ArrayList<E> {
 
@@ -82,7 +89,8 @@ public class MainActivity extends AppCompatActivity {
 		public String toString() {
 			String result = "";
 			for (E value : this) {
-				result = result.equals("") ? ('"' + value.toString() + '"') : (result + ",\"" + value.toString() + '"');
+				String escapedValue = StringEscapeUtils.escapeJson(value.toString());
+				result = result.equals("") ? ('"' + escapedValue + '"') : (result + ",\"" + escapedValue + '"');
 			}
 			return "[" + result  + "]";
 		}
@@ -91,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
 	private static Object getArrayData(JSONObject jsonObject, String key) {
 		try {
 			if (!jsonObject.has(key))
-				jsonObject.put(key, new ArrayList<String>());
+				jsonObject.put(key, new ArrayList<>());
 			Object tempList = jsonObject.get(key);
 			return tempList.getClass() == JSONArray.class ? tempList.toString() :
 				tempList.getClass() == String.class ? (String) tempList : (ArrayList) tempList;
@@ -140,7 +148,15 @@ public class MainActivity extends AppCompatActivity {
 			return data;
 		}
 
-		JSONArray strings = new JSONArray(string);
+		JSONArray strings;
+		try {
+			strings = new JSONArray(string);
+		} catch (Exception ignore) {
+			// Failed parsing JSON, probably due to an old version stringify issue, keep it empty for refreshing
+			strings = new JSONArray();
+			ignoreNews = true;
+		}
+
 		for (int position = 0; position < strings.length(); position++) {
 			data.add(strings.getString(position));
 		}
@@ -185,8 +201,14 @@ public class MainActivity extends AppCompatActivity {
 		animeSearch.setAdapter(mAdapter);
 
 		checkForUpdates();
+		loadCategories();
 		showMainPage();
 		scheduleJob();
+
+		pullToRefresh = findViewById(R.id.pullToRefresh);
+		pullToRefresh.setOnRefreshListener(() -> {
+			showMainPage();
+		});
 
 		// -- Cloudflare Bypass -- //
 		/*mainWebView = new WeakReference<>(findViewById(R.id.mainWebView));
@@ -566,20 +588,30 @@ public class MainActivity extends AppCompatActivity {
 		}
 	}
 
-	public void addAnimes(String listClassName, String infoClassName, Category category, Document doc) {
-		new Thread(()-> {
+	public interface AnimeFilter {
+		boolean filter(String a) throws JSONException;
+	}
+	public void addAnimes(String listClassName, String infoClassName, Category category, AnimeFilter filter, Document doc) {
+		new Thread(() -> {
 			try {
 				ArrayList<String[]> animes = new ArrayList<>();
 				for (Element anime : doc.getElementsByClass(listClassName).get(0).children()) {
 					Element animeInfo = anime.getElementsByClass(infoClassName).get(0).child(0);
-					animes.add(new String[]{
-						animeInfo.attr("title"),
-						animeInfo.child(0).attr("src"),
-						animeInfo.attr("href"),
-						anime.getElementsByClass("airing").size() > 0 ? "Airing" : "Finished"
-					});
+					if (filter.filter(animeInfo.attr("title"))) {
+						animes.add(new String[]{
+							animeInfo.attr("title"),
+							animeInfo.child(0).attr("src"),
+							animeInfo.attr("href"),
+							anime.getElementsByClass("airing").size() > 0 ? "Airing" : "Finished"
+						});
+					}
 				}
-				runOnUiThread(() -> ((AnimeAdapter) ((RecyclerView) category.layout.findViewById(R.id.category)).getAdapter()).setData(animes));
+				runOnUiThread(() -> {
+					category.layout.setVisibility(animes.size() == 0 ? View.GONE : View.VISIBLE);
+					((AnimeAdapter) ((RecyclerView) category.layout.findViewById(R.id.category)).getAdapter()).setData(animes);
+					if (category == favoritesCategory)
+						pullToRefresh.setRefreshing(false);
+				});
 			} catch (Exception e) {
 				e.printStackTrace();
 				handleException(e, this);
@@ -587,21 +619,47 @@ public class MainActivity extends AppCompatActivity {
 		}).start();
 	}
 
+	Category favoritesCategory = null;
+	Category newCategory = null;
+	Category recentCategory = null;
+	Category popularCategory = null;
+
+	public void loadCategories() {
+		favoritesCategory = new Category("New Favorites", null, this);
+		newCategory = new Category("New Episodes", null, this);
+		recentCategory = new Category("Recently Added", null, this);
+		popularCategory = new Category("Popular", null, this);
+
+		View itemHolder = findViewById(R.id.itemHolder);
+
+		favoritesCategory.inflateView(itemHolder);
+		newCategory.inflateView(itemHolder);
+		recentCategory.inflateView(itemHolder);
+		popularCategory.inflateView(itemHolder);
+
+		// Don't show it in case there's no favorite animes
+		favoritesCategory.layout.setVisibility(View.GONE);
+	}
+
 	public void showMainPage() {
-		final Category newCategory = new Category("New Episodes", null, this);
-		final Category recentCategory = new Category("Recently Added", null, this);
-		final Category popularCategory = new Category("Popular", null, this);
-
-		newCategory.inflateView(findViewById(R.id.itemHolder));
-		recentCategory.inflateView(findViewById(R.id.itemHolder));
-		popularCategory.inflateView(findViewById(R.id.itemHolder));
-
 		new Thread(()->{
 			try {
+				JSONObject favorites = userData.getJSONObject("favorites");
 				Document doc = Jsoup.connect("https://animefenix.com/").get();
-				addAnimes("capitulos-grid", "overarchingdiv", newCategory, doc);
-				addAnimes("list-series", "image", recentCategory, doc);
-				addAnimes("home-slider", "image", popularCategory, doc);
+				AtomicInteger count = new AtomicInteger();
+
+				addAnimes("capitulos-grid", "overarchingdiv", newCategory, a -> true, doc);
+				addAnimes("list-series", "image", recentCategory, a -> true, doc);
+				addAnimes("home-slider", "image", popularCategory, a -> true, doc);
+				addAnimes("capitulos-grid", "overarchingdiv", favoritesCategory, a -> {
+					for (Iterator<String> it = favorites.keys(); it.hasNext();) {
+						if (a.contains(it.next())) {
+							count.getAndIncrement();
+							return true;
+						}
+					}
+					return false;
+				}, doc);
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -629,6 +687,7 @@ public class MainActivity extends AppCompatActivity {
 						updateUserData(this);
 						importStream.close();
 
+						ignoreNews = true;
 						Toast.makeText(this, "Imported data successfully.", Toast.LENGTH_LONG).show();
 						break;
 					case 5522: // Export Data

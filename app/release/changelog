@@ -127,5 +127,11 @@
 	],
     "2.8.6 - 20/11/21": [
         "ARREGLO:Spam de notificaciones, de nuevo"
+    ],
+    "2.9 - 21/11/21": [
+        "ARREGLO:Error al guardar episodios",
+        "ARREGLO:Algunos animes no cargaban",
+        "NUEVO:Categoría para nuevos episodios favoritos",
+        "CAMBIO:Diferentes colores para animes vistos o no vistos"
     ]
 }

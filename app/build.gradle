@@ -9,8 +9,8 @@ android {
         applicationId "com.dyna.nukima"
         minSdkVersion 23
         targetSdkVersion 31
-        versionCode 37
-        versionName '2.8.6'
+        versionCode 38
+        versionName '2.9'
 
         // setProperty("archivesBaseName", "nukima")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -48,6 +48,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-storage:19.1.1'
     implementation 'com.google.firebase:firebase-auth:19.3.2'
     implementation 'com.google.android.material:material:1.1.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
     implementation 'com.squareup.picasso:picasso:2.5.2'

@@ -255,6 +255,14 @@ public class AnimeActivity extends AppCompatActivity {
 				// Anime info
 				Elements info = doc.getElementsByClass("has-text-light").get(1).children();
 				String rating = doc.getElementsByClass("points").get(0).text();
+
+				for (int i=(info.size()-1); i>0; i--) { // Remove extra info such as Extras, Sequels...
+					Element e = info.get(i);
+					if (e.toString().contains("href")) {
+						info.remove(i);
+					}
+				}
+
 				if (info.size() > 4) {
 					if (info.size() > 6)
 						info.remove(4);

@@ -4,7 +4,13 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/activity_anime.xml" value="0.6074201898188093" />
-        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/activity_history.xml" value="0.20520833333333333" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/activity_main.xml" value="0.25" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/anime.xml" value="0.36666666666666664" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/anime_history.xml" value="0.67" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/anime_search.xml" value="0.5" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/episode.xml" value="0.36666666666666664" />
+        <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/layout/title.xml" value="0.67" />
         <entry key="..\:/Users/dyna/StudioProjects/nukima/app/src/main/res/menu/anime.xml" value="0.33" />
       </map>
     </option>

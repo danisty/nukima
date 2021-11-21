@@ -90,7 +90,7 @@ class Episode {
 			Integer episodeNum = Integer.parseInt(matcher.group(1));
 
 			MainActivity.checkUserData(this.context);
-			ArrayList<Integer> episodesList =  MainActivity.getIntegerArrayList(MainActivity.userData.getJSONObject("animes"), animeName);
+			ArrayList<Integer> episodesList = MainActivity.getIntegerArrayList(MainActivity.userData.getJSONObject("animes"), animeName);
 			int colorAccent = this.context.getResources().getColor(R.color.colorAccent, null);
 			boolean episodeSeen = watch == null && episodesList.contains(episodeNum);
 			if (episode != null) {
