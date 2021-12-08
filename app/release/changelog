@@ -133,5 +133,8 @@
         "ARREGLO:Algunos animes no cargaban",
         "NUEVO:Categoría para nuevos episodios favoritos",
         "CAMBIO:Diferentes colores para animes vistos o no vistos"
+    ],
+    "2.9.1 - 8/12/21": [
+        "ARREGLO:Accidentalmente actualizar la pagina principal al moverse por la lista de animes"
     ]
 }

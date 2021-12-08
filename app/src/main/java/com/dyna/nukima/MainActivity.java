@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 	public static Map<String, String> cookies;
 	public static String cookiesRaw;
 	public final Object permissionResponse = new Object();
-	public SwipeRefreshLayout pullToRefresh;
+	public static WeakReference<SwipeRefreshLayout> pullToRefresh;
 
 	public MainActivity() {
 	}
@@ -122,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
 		ArrayList<Integer> data = new ArrayList<>();
 		jsonObject.put(key, data);
 		if (string.length() == 2) {
+			ignoreNews = true; // The list is empty, we don't want to notify all animes/episodes
 			return data;
 		}
 
@@ -205,8 +206,8 @@ public class MainActivity extends AppCompatActivity {
 		showMainPage();
 		scheduleJob();
 
-		pullToRefresh = findViewById(R.id.pullToRefresh);
-		pullToRefresh.setOnRefreshListener(() -> {
+		pullToRefresh = new WeakReference<>(findViewById(R.id.pullToRefresh));
+		pullToRefresh.get().setOnRefreshListener(() -> {
 			showMainPage();
 		});
 
@@ -610,7 +611,7 @@ public class MainActivity extends AppCompatActivity {
 					category.layout.setVisibility(animes.size() == 0 ? View.GONE : View.VISIBLE);
 					((AnimeAdapter) ((RecyclerView) category.layout.findViewById(R.id.category)).getAdapter()).setData(animes);
 					if (category == favoritesCategory)
-						pullToRefresh.setRefreshing(false);
+						pullToRefresh.get().setRefreshing(false);
 				});
 			} catch (Exception e) {
 				e.printStackTrace();

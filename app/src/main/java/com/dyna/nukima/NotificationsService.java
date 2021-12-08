@@ -100,6 +100,9 @@ public class NotificationsService extends JobService {
 					}
 				}
 
+				if (actualRecentEpisodes.size() == 0 || actualRecentAnimes.size() == 0)
+					return; // We don't want to store empty lists in case it fails to fetch data from the server
+
 				MainActivity.userData.put("recentEpisodes", actualRecentEpisodes);
 				MainActivity.userData.put("recentAnimes", actualRecentAnimes);
 

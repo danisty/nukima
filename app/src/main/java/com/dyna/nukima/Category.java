@@ -1,10 +1,14 @@
 package com.dyna.nukima;
 
+import static androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE;
+import static androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_DRAGGING;
+
 import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -39,6 +43,18 @@ class Category {
 			recycler.setHasFixedSize(true);
 			recycler.setLayoutManager(layoutManager);
 			recycler.setAdapter(mAdapter);
+
+			recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+				@Override
+				public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+					super.onScrollStateChanged(recyclerView, newState);
+
+					if (newState == SCROLL_STATE_DRAGGING)
+						MainActivity.pullToRefresh.get().setEnabled(false);
+					if (newState == SCROLL_STATE_IDLE)
+						MainActivity.pullToRefresh.get().setEnabled(true);
+				}
+			});
 		});
 	}
 
